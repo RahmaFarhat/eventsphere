@@ -41,7 +41,15 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
 
 
 
+        holder.buttonUpdate.setOnClickListener(v -> {
+            // Appel de la méthode updateEvent() avec l'événement à mettre à jour
+            ((MainActivity) context).updateEvent(event);
+        });
 
+        holder.buttonDelete.setOnClickListener(v -> {
+            // Appel de la méthode deleteEvent() avec l'ID de l'événement à supprimer
+            ((MainActivity) context).deleteEvent(event.getId());
+        });
 
 
     }
