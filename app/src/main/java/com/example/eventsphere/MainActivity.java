@@ -2,57 +2,86 @@ package com.example.eventsphere;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView; // Importer RecyclerView
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.ContentValues;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
-import android.content.Intent;
 
 import com.example.eventsphere.entity.Event;
-import com.example.eventsphere.entity.EventAdapter; // Importer l'adaptateur
+import com.example.eventsphere.entity.EventAdapter;
 import com.example.eventsphere.entity.DatabaseHelper;
 
-import java.util.ArrayList; // Importer ArrayList
-import java.util.List; // Importer List
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int IMAGE_PICK_CODE = 1000; // Code to pick an image
     private DatabaseHelper databaseHelper;
-    private EditText editTextName, editTextDate, editTextLocation, editTextDescription;
-    private Button buttonAdd;
-    private RecyclerView recyclerView; // Déclaration du RecyclerView
-    private EventAdapter eventAdapter; // Adaptateur pour la liste des événements
-    private List<Event> eventList; // Liste des événements
+    private EditText editTextName, editTextLocation, editTextDescription;
+    private TextView editTextDate; // Change to TextView for date
+    private Button buttonAdd, buttonSelectImage;
+    private ImageView imageView; // ImageView for displaying selected image
+    private RecyclerView recyclerView;
+    private EventAdapter eventAdapter;
+    private List<Event> eventList;
+    private Uri selectedImageUri; // URI for the selected image
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Initialiser les vues
+        // Initialize views
         editTextName = findViewById(R.id.editTextName);
         editTextDate = findViewById(R.id.editTextDate);
         editTextLocation = findViewById(R.id.editTextLocation);
         editTextDescription = findViewById(R.id.editTextDescription);
         buttonAdd = findViewById(R.id.buttonAdd);
+        imageView = findViewById(R.id.imageView);
+        buttonSelectImage = findViewById(R.id.buttonSelectImage);
 
-        // Initialiser le RecyclerView
+        // Initialize RecyclerView
         recyclerView = findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this)); // Définir le LayoutManager
-        eventList = new ArrayList<>(); // Initialiser la liste des événements
-        eventAdapter = new EventAdapter(eventList, this); // Créer l'adaptateur
-        recyclerView.setAdapter(eventAdapter); // Définir l'adaptateur pour le RecyclerView
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        eventList = new ArrayList<>();
+        eventAdapter = new EventAdapter(eventList, this);
+        recyclerView.setAdapter(eventAdapter);
 
-        // Initialiser l'assistant de base de données
+        // Initialize database helper
         databaseHelper = new DatabaseHelper(this);
 
-        // Ajouter un écouteur de clic pour le bouton
+        // Button to select image
+        buttonSelectImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pickImageFromGallery();
+            }
+        });
+
+        // Set OnClickListener for date TextView to show DatePickerDialog
+        editTextDate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showDatePickerDialog();
+            }
+        });
+
+        // Add event button click listener
         buttonAdd.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -60,8 +89,40 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Charger les événements dès que l'activité est créée
+        // Load events on activity creation
         loadEvents();
+    }
+
+    private void showDatePickerDialog() {
+        Calendar calendar = Calendar.getInstance();
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH);
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+
+        new android.app.DatePickerDialog(this, (view, selectedYear, selectedMonth, selectedDay) -> {
+            // Display selected date in the TextView
+            String date = selectedDay + "/" + (selectedMonth + 1) + "/" + selectedYear;
+            editTextDate.setText(date);
+        }, year, month, day).show();
+    }
+
+    private void pickImageFromGallery() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        startActivityForResult(intent, IMAGE_PICK_CODE);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == IMAGE_PICK_CODE && resultCode == RESULT_OK && data != null) {
+            selectedImageUri = data.getData(); // Get the image URI
+            try {
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedImageUri);
+                imageView.setImageBitmap(bitmap); // Set the image in the ImageView
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void addEvent() {
@@ -81,61 +142,26 @@ public class MainActivity extends AppCompatActivity {
         values.put("date", date);
         values.put("location", location);
         values.put("description", description);
+        if (selectedImageUri != null) {
+            values.put("image", selectedImageUri.toString()); // Store the image URI as a string
+        }
         db.insert("events", null, values);
         db.close();
 
-        // Effacer les champs de saisie
+        // Clear input fields
         editTextName.setText("");
         editTextDate.setText("");
         editTextLocation.setText("");
         editTextDescription.setText("");
+        imageView.setImageResource(0); // Clear the image view
 
         Toast.makeText(this, "Event added", Toast.LENGTH_SHORT).show();
 
-        // Charger les événements
-        loadEvents(); // Mettre à jour la liste après ajout
-    }
+        // Load events
+        loadEvents();
 
-    // Méthode pour supprimer un événement
-    public void deleteEvent(int eventId) {
-        SQLiteDatabase db = databaseHelper.getWritableDatabase();
-        db.delete("events", "id = ?", new String[]{String.valueOf(eventId)});
-        db.close();
-        Toast.makeText(this, "Event deleted", Toast.LENGTH_SHORT).show();
-        loadEvents(); // Recharger les événements après suppression
-    }
-
-    // Méthode pour mettre à jour un événement
-    public void updateEvent(Event event) {
-        Intent intent = new Intent(this, UpdateEventActivity.class);
-        intent.putExtra("eventId", event.getId());
-        intent.putExtra("eventName", event.getName());
-        intent.putExtra("eventDate", event.getDate());
-        intent.putExtra("eventLocation", event.getLocation());
-        intent.putExtra("eventDescription", event.getDescription());
+        // Navigate to EventListActivity
+        Intent intent = new Intent(MainActivity.this, EventListActivity.class);
+        intent.putExtra("eventList", (ArrayList<Event>) eventList); // Pass the event list to the new activity
         startActivity(intent);
     }
-
-    private void loadEvents() {
-        eventList.clear(); // Vider la liste avant de charger
-        SQLiteDatabase db = databaseHelper.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT * FROM events", null); // Charger les événements
-
-        if (cursor.moveToFirst()) {
-            do {
-                int id = cursor.getInt(0); // Récupérer l'ID
-                String name = cursor.getString(1); // Récupérer le nom
-                String date = cursor.getString(2); // Récupérer la date
-                String location = cursor.getString(3); // Récupérer la localisation
-                String description = cursor.getString(4); // Récupérer la description
-
-                // Ajouter un nouvel événement à la liste
-                eventList.add(new Event(id, name, date, location, description));
-            } while (cursor.moveToNext()); // Continuer jusqu'à ce qu'il n'y ait plus d'événements
-        }
-
-        cursor.close(); // Fermer le curseur
-        db.close(); // Fermer la base de données
-        eventAdapter.notifyDataSetChanged(); // Notifier l'adaptateur que la liste a changé
-    }
-}

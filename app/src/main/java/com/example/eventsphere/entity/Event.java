@@ -6,14 +6,26 @@ public class Event {
     private String date;
     private String location;
     private String description;
+    private String imageUri; // Add this line
 
-    public Event(int id, String name, String date, String location, String description) {
+
+    public String getImageUri() {
+        return imageUri;
+    }
+
+    public void setImageUri(String imageUri) {
+        this.imageUri = imageUri;
+    }
+
+    public Event(int id, String name, String date, String location, String description, String imageUri) {
         this.id = id;
         this.name = name;
         this.date = date;
         this.location = location;
         this.description = description;
+        this.imageUri = imageUri; // Add this line
     }
+
 
     // Getters
     public int getId() { return id; }

@@ -1,18 +1,19 @@
 package com.example.eventsphere.entity;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
-import com.example.eventsphere.R;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
-import com.example.eventsphere.MainActivity;
-
+import com.example.eventsphere.R;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHolder> {
@@ -27,7 +28,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     @NonNull
     @Override
     public EventViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_event, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.item_event, parent, false);
         return new EventViewHolder(view);
     }
 
@@ -39,19 +40,31 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         holder.textViewLocation.setText(event.getLocation());
         holder.textViewDescription.setText(event.getDescription());
 
+        if (event.getImageUri() != null) {
+            Uri imageUri = Uri.parse(event.getImageUri());
+            loadImage(holder.imageView, imageUri);
+        } else {
+            holder.imageView.setImageResource(R.drawable.placeholder); // Placeholder if no image URI is available
+        }
+    }
 
-
-        holder.buttonUpdate.setOnClickListener(v -> {
-            // Appel de la méthode updateEvent() avec l'événement à mettre à jour
-            ((MainActivity) context).updateEvent(event);
-        });
-
-        holder.buttonDelete.setOnClickListener(v -> {
-            // Appel de la méthode deleteEvent() avec l'ID de l'événement à supprimer
-            ((MainActivity) context).deleteEvent(event.getId());
-        });
-
-
+    private void loadImage(ImageView imageView, Uri imageUri) {
+        try {
+            InputStream inputStream = context.getContentResolver().openInputStream(imageUri);
+            if (inputStream != null) {
+                Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+                imageView.setImageBitmap(bitmap); // Set the image in ImageView
+                inputStream.close(); // Close the stream
+            } else {
+                imageView.setImageResource(R.drawable.placeholder); // Set placeholder if inputStream is null
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            imageView.setImageResource(R.drawable.placeholder); // Set placeholder on error
+        } catch (SecurityException e) {
+            e.printStackTrace();
+            imageView.setImageResource(R.drawable.placeholder); // Handle permission denial
+        }
     }
 
     @Override
@@ -59,18 +72,17 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         return eventList.size();
     }
 
-    static class EventViewHolder extends RecyclerView.ViewHolder {
+    public static class EventViewHolder extends RecyclerView.ViewHolder {
         TextView textViewName, textViewDate, textViewLocation, textViewDescription;
-        Button buttonUpdate, buttonDelete;
+        ImageView imageView;
 
-        EventViewHolder(@NonNull View itemView) {
+        public EventViewHolder(@NonNull View itemView) {
             super(itemView);
             textViewName = itemView.findViewById(R.id.textViewName);
             textViewDate = itemView.findViewById(R.id.textViewDate);
             textViewLocation = itemView.findViewById(R.id.textViewLocation);
             textViewDescription = itemView.findViewById(R.id.textViewDescription);
-            buttonUpdate = itemView.findViewById(R.id.buttonUpdate);
-            buttonDelete = itemView.findViewById(R.id.buttonDelete);
+            imageView = itemView.findViewById(R.id.imageView);
         }
     }
 }

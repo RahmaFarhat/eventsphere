@@ -10,11 +10,15 @@
         android:layout_height="wrap_content"
         android:hint="Event Name" />
 
-    <EditText
+    <TextView
         android:id="@+id/editTextDate"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Event Date" />
+        android:hint="Event Date"
+        android:padding="16dp"
+        android:background="@android:color/darker_gray"
+        android:clickable="true"
+        android:focusable="true" />
 
     <EditText
         android:id="@+id/editTextLocation"
@@ -30,15 +34,29 @@
 
     <Button
         android:id="@+id/buttonAdd"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Add Event" />
 
-    <!-- Add RecyclerView to display the list of events -->
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:scaleType="centerCrop"
+        android:background="@android:color/darker_gray"
+        android:contentDescription="Event Image" />
+
+    <Button
+        android:id="@+id/buttonSelectImage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Select Image" />
+
+    <!-- Add the RecyclerView here -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" /> <!-- Use weight to make it fill the remaining space -->
+        android:layout_weight="1" /> <!-- This makes the RecyclerView take the remaining space -->
 
 </LinearLayout>
