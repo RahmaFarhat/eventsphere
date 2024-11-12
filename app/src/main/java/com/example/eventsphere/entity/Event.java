@@ -25,6 +25,13 @@ public class Event {
         this.description = description;
         this.imageUri = imageUri; // Add this line
     }
+    public Event(String name, String date, String location, String description, String imageUri) {
+        this.name = name;
+        this.date = date;
+        this.location = location;
+        this.description = description;
+        this.imageUri = imageUri;
+    }
 
 
     // Getters
