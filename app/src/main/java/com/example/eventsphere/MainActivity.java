@@ -124,7 +124,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
     private void addEvent() {
         String name = editTextName.getText().toString();
         String date = editTextDate.getText().toString();
@@ -145,8 +144,13 @@ public class MainActivity extends AppCompatActivity {
         if (selectedImageUri != null) {
             values.put("image", selectedImageUri.toString()); // Store the image URI as a string
         }
-        db.insert("events", null, values);
+
+        // Insert event into the database and get the generated event ID
+        long eventId = db.insert("events", null, values);
         db.close();
+
+        // Assuming eventId is generated automatically, cast it to int
+        Event event = new Event((int) eventId, name, date, location, description, selectedImageUri != null ? selectedImageUri.toString() : null);
 
         // Clear input fields
         editTextName.setText("");
@@ -165,3 +169,27 @@ public class MainActivity extends AppCompatActivity {
         intent.putExtra("eventList", (ArrayList<Event>) eventList); // Pass the event list to the new activity
         startActivity(intent);
     }
+
+    // Method to load events from the database
+    private void loadEvents() {
+        SQLiteDatabase db = databaseHelper.getReadableDatabase();
+        Cursor cursor = db.query("events", null, null, null, null, null, null);
+
+        eventList.clear();
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                String name = cursor.getString(cursor.getColumnIndex("name"));
+                String date = cursor.getString(cursor.getColumnIndex("date"));
+                String location = cursor.getString(cursor.getColumnIndex("location"));
+                String description = cursor.getString(cursor.getColumnIndex("description"));
+                String imageUri = cursor.getString(cursor.getColumnIndex("image"));
+
+                Event event = new Event(name, date, location, description, imageUri);
+                eventList.add(event);
+            }
+            cursor.close();
+        }
+
+        eventAdapter.notifyDataSetChanged(); // Refresh the adapter
+    }
+}
